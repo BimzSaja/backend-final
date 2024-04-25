@@ -2,131 +2,192 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\AlatModel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class AlatController extends Controller
 {
     protected $alatModel;
-
     public function __construct()
     {
         $this->alatModel = new AlatModel();
     }
-
     public function index()
     {
-        $alat = $this->alatModel->get();
+        try
+        {
+            $alat = $this->alatModel->get_alat();
 
-        if ($alat->isEmpty()) {
+            if (count($alat) === 0)
+            {
+                return response()->json([
+                    'status' => 204,
+                    'msg' => 'Data alat masih kosong',
+                    'data' => $alat
+                ], 204);
+            }
+            else
+            {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Data alat berhasil didapatkan',
+                    'data' => $alat,
+                ], 200);
+            }
+
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data alat masih kosong!',
-                'data' => $alat
-            ], 200);
-        } else {
-            return response()->json([
-                'message' => 'Data alat berhasil didapatkan',
-                'data' => $alat
-            ], 200);
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
         }
     }
+    public function show ($id) {
+        try
+        {
+            $alat = AlatModel::find($id);
 
-
+            if ($alat == null) {
+                return response()->json([
+                    'status' => 404,
+                    'msg' => 'Gagal mendapatkan data alat! Data tidak ditemukan',
+                    'data' => $alat
+                ], 404);
+            } else {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Berhasil mendapatkan data alat',
+                    'data' => $alat
+                ], 200);
+            }
+        }
+        catch (\Exception)
+        {
+            return response()->json([
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
+        }
+    }
     public function store(Request $request)
     {
-        try {
+        try
+        {
             $validator = Validator::make($request->all(), [
-                'alat_nama' => 'required|string|max:255',
-                'alat_kategori_id' => 'required|exists:kategori,kategori_id',
-                'alat_deskripsi' => 'nullable|string',
-                'alat_hargaperhari' => 'required|numeric|min:0',
-                'alat_stok' => 'required|integer|min:0',
+                'alat_kategori_id' => 'required|numeric',
+                'alat_nama' => 'required|string|max:150',
+                'alat_deskripsi' => 'required|string|max:255',
+                'alat_hargaperhari' => 'required|numeric',
+                'alat_stok' => 'required|numeric',
+            ], [
+                'numeric' => 'Data harus berupa angka!',
+                'required' => 'Kolom tidak boleh kosong!',
+                'string' => 'Data harus berupa teks!',
+                'max' => 'Panjang data tidak boleh lebih dari :max karakter!',
             ]);
 
-            if ($validator->fails()) {
+            if ($validator->fails())
+            {
                 return response()->json([
-                    'message' => 'Validasi Gagal',
+                    'status' => 422,
+                    'msg' => 'Gagal menambahkan data alat!',
                     'errors' => $validator->errors()
                 ], 422);
             }
+            else
+            {
+                $alat = $this->alatModel->create_alat($validator->validated());
 
-            $alat = $this->alatModel->create($validator->validated());
-
+                return response()->json([
+                    'status' => 201,
+                    'msg' => 'Data alat berhasil dibuat',
+                    'data' => $alat
+                ], 201);
+            }
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data Alat berhasil dibuat',
-                'data' => $alat
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Terjadi kesalahan pada server'
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
             ], 500);
         }
     }
 
-    public function update(Request $request, $id)
+    public function update (Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'alat_nama' => 'required|string|max:255',
-            'alat_kategori_id' => 'required|exists:kategori,kategori_id',
-            'alat_deskripsi' => 'nullable|string',
-            'alat_hargaperhari' => 'required|numeric|min:0',
-            'alat_stok' => 'required|integer|min:0',
-        ]);
+        try
+        {
+            $validator = Validator::make($request->all(), [
+                'alat_kategori_id' => 'required|numeric',
+                'alat_nama' => 'required|string|max:150',
+                'alat_deskripsi' => 'required|string|max:255',
+                'alat_hargaperhari' => 'required|numeric',
+                'alat_stok' => 'required|numeric',
+            ], [
+                'numeric' => 'Data harus berupa angka!',
+                'required' => 'Kolom tidak boleh kosong!',
+                'string' => 'Data harus berupa teks!',
+                'max' => 'Panjang data tidak boleh lebih dari :max karakter!',
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validasi Gagal',
-                'errors' => $validator->errors()
-            ], 422);
+            if ($validator->fails())
+            {
+                return response()->json([
+                    'status' => 422,
+                    'msg' => 'Gagal update data alat!',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            else
+            {
+                $alat = $this->alatModel->update_alat($validator->validated(), $id);
+
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Data alat berhasil diupdate',
+                    'data' => $alat
+                ], 200);
+            }
         }
-
-        $alat = $this->alatModel->find($id);
-
-        if (!$alat) {
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data alat tidak ditemukan'
-            ], 404);
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
         }
-
-        $alat->update($validator->validated());
-
-        return response()->json([
-            'message' => 'Data alat berhasil diperbarui',
-            'data' => $alat
-        ], 200);
     }
 
-    public function destroy($id)
+    public function destroy ($id)
     {
-        $alat = $this->alatModel->find($id);
+        try
+        {
+            $alat = $this->alatModel->delete_alat($id);
 
-        if (!$alat) {
-            return response()->json([
-                'message' => 'Data alat tidak ditemukan'
-            ], 404);
+            if ($alat == null) {
+                return response()->json([
+                    'status' => 404,
+                    'msg' => 'Gagal menghapus data alat! Data tidak ditemukan',
+                    'data' => $alat
+                ], 404);
+            } else {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Berhasil menghapus data alat',
+                    'data' => $alat
+                ], 200);
+            }
         }
-
-        $alat->delete();
-
-        return response()->json([
-            'message' => 'Data alat berhasil dihapus'
-        ], 200);
-    }
-
-    public function show($id)
-    {
-        $alat = $this->alatModel->find($id);
-
-        if (!$alat) {
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data alat tidak ditemukan'
-            ], 404);
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
         }
-
-        return response()->json([
-            'message' => 'Data alat berhasil didapatkan',
-            'data' => $alat
-        ], 200);
     }
 }

@@ -9,139 +9,174 @@ use Illuminate\Support\Facades\Validator;
 class KategoriController extends Controller
 {
     protected $kategoriModel;
-
     public function __construct()
     {
-        $this->kategoriModel = new KategoriModel;
+        $this->kategoriModel = new KategoriModel();
     }
-
     public function index()
     {
-        try {
-            $kategori = $this->kategoriModel->get();
+        try
+        {
+            $kategori = $this->kategoriModel->get_kategori();
 
-            if ($kategori->isEmpty()) {
+            if (count($kategori) === 0)
+            {
                 return response()->json([
-                    'message' => 'Data Kategori masih kosong',
+                    'status' => 204,
+                    'msg' => 'Data kategori masih kosong',
                     'data' => $kategori
-                ], 200);
-            } else {
+                ], 204);
+            }
+            else
+            {
                 return response()->json([
-                    'message' => 'Data Kategori berhasil didapatkan',
-                    'data' => $kategori
+                    'status' => 200,
+                    'msg' => 'Data kategori berhasil didapatkan',
+                    'data' => $kategori,
                 ], 200);
             }
-        } catch (\Exception $e) {
+
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Terjadi Kesalahan pada Server',
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
             ], 500);
         }
     }
+    public function show ($id) {
+        try
+        {
+            $kategori = KategoriModel::find($id);
 
+            if ($kategori == null) {
+                return response()->json([
+                    'status' => 404,
+                    'msg' => 'Gagal mendapatkan data kategori! Data tidak ditemukan',
+                    'data' => $kategori
+                ], 404);
+            } else {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Berhasil mendapatkan data kategori',
+                    'data' => $kategori
+                ], 200);
+            }
+        }
+        catch (\Exception)
+        {
+            return response()->json([
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
+        }
+    }
     public function store(Request $request)
     {
-        try {
+        try
+        {
             $validator = Validator::make($request->all(), [
                 'kategori_nama' => 'required|string|max:100',
+            ], [
+                'required' => 'Kolom tidak boleh kosong!',
+                'string' => 'Data harus berupa teks!',
+                'max' => 'Panjang data tidak boleh lebih dari :max karakter!',
             ]);
 
-            if ($validator->fails()) {
+            if ($validator->fails())
+            {
                 return response()->json([
-                    'message' => 'Validasi gagal',
+                    'status' => 422,
+                    'msg' => 'Gagal menambahkan data kategori!',
                     'errors' => $validator->errors()
                 ], 422);
-            } else {
-                $kategori = $this->kategoriModel->create($validator->validated());
+            }
+            else
+            {
+                $kategori = $this->kategoriModel->create_kategori($validator->validated());
 
                 return response()->json([
-                    'message' => 'Data Kategori berhasil dibuat',
+                    'status' => 201,
+                    'msg' => 'Data kategori berhasil dibuat',
                     'data' => $kategori
                 ], 201);
             }
-        } catch (\Exception $e) {
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Terjadi Kesalahan pada Server',
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
             ], 500);
         }
     }
 
-    public function show($id)
+    public function update (Request $request, $id)
     {
-        try {
-            $kategori = $this->kategoriModel->find($id);
+        try
+        {
+            $validator = Validator::make($request->all(), [
+                'kategori_nama' => 'required|string|max:100',
+            ], [
+                'required' => 'Kolom tidak boleh kosong!',
+                'string' => 'Data harus berupa teks!',
+                'max' => 'Panjang data tidak boleh lebih dari :max karakter!',
+            ]);
 
-            if (!$kategori) {
+            if ($validator->fails())
+            {
                 return response()->json([
-                    'message' => 'Data Kategori tidak ditemukan',
-                ], 404);
-            } else {
+                    'status' => 422,
+                    'msg' => 'Gagal update data kategori!',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            else
+            {
+                $kategori = $this->kategoriModel->update_kategori($validator->validated(), $id);
+
                 return response()->json([
-                    'message' => 'Data Kategori berhasil ditemukan',
+                    'status' => 200,
+                    'msg' => 'Data kategori berhasil diupdate',
                     'data' => $kategori
                 ], 200);
             }
-        } catch (\Exception $e) {
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Terjadi Kesalahan pada Server',
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
             ], 500);
         }
     }
 
-    public function update(Request $request, $id)
+    public function destroy ($id)
     {
-        try {
-            $validator = Validator::make($request->all(), [
-                'kategori_nama' => 'required|string|max:100',
-            ]);
+        try
+        {
+            $kategori = $this->kategoriModel->delete_kategori($id);
 
-            if ($validator->fails()) {
+            if ($kategori == null) {
                 return response()->json([
-                    'message' => 'Validasi gagal',
-                    'errors' => $validator->errors()
-                ], 422);
-            } else {
-                $kategori = $this->kategoriModel->find($id);
-
-                if (!$kategori) {
-                    return response()->json([
-                        'message' => 'Data Kategori tidak ditemukan'
-                    ], 404);
-                } else {
-                    $kategori->update($validator->validated());
-
-                    return response()->json([
-                        'message' => 'Data Kategori berhasil diperbarui',
-                        'data' => $kategori
-                    ], 200);
-                }
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Terjadi Kesalahan pada Server',
-            ], 500);
-        }
-    }
-
-    public function destroy($id)
-    {
-        try {
-            $kategori = $this->kategoriModel->find($id);
-
-            if (!$kategori) {
-                return response()->json([
-                    'message' => 'Data Kategori tidak ditemukan'
+                    'status' => 404,
+                    'msg' => 'Gagal menghapus data kategori! Data tidak ditemukan',
+                    'data' => $kategori
                 ], 404);
             } else {
-                $kategori->delete();
-
                 return response()->json([
-                    'message' => 'Data Kategori berhasil dihapus',
+                    'status' => 200,
+                    'msg' => 'Berhasil menghapus data kategori',
+                    'data' => $kategori
                 ], 200);
             }
-
-        } catch (\Exception $e) {
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Terjadi Kesalahan pada Server',
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
             ], 500);
         }
     }

@@ -2,168 +2,190 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PelangganDataModel;
 use Illuminate\Http\Request;
-use App\Models\Pelanggan_DataModel;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
-class Pelanggan_DataController extends Controller
+class PelangganDataController extends Controller
 {
-    protected $pelanggan_dataModel;
+    protected $pelangganDataModel;
     public function __construct()
     {
-        $this->pelanggan_dataModel = new Pelanggan_DataModel;
+        $this->pelangganDataModel = new PelangganDataModel();
     }
     public function index()
     {
-        $pelanggan_data = $this->pelanggan_dataModel->get();
+        try
+        {
+            $pelangganData = $this->pelangganDataModel->get_pelangganData();
 
-        if ($pelanggan_data->isEmpty()) {
+            if (count($pelangganData) === 0)
+            {
+                return response()->json([
+                    'status' => 204,
+                    'msg' => 'Data pelanggan data masih kosong',
+                    'data' => $pelangganData
+                ], 204);
+            }
+            else
+            {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Data pelanggan data berhasil didapatkan',
+                    'data' => $pelangganData,
+                ], 200);
+            }
+
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data Pelanggan Data masih kosong',
-                'data' => $pelanggan_data,
-            ], 200);
-        } else {
-            return response()->json([
-                'message' => 'Data Pelanggan Data berhasil didapatkan',
-                'data' => $pelanggan_data,
-            ], 200);
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
         }
     }
+    public function show ($id) {
+        try
+        {
+            $pelangganData = PelangganDataModel::find($id);
 
+            if ($pelangganData == null) {
+                return response()->json([
+                    'status' => 404,
+                    'msg' => 'Gagal mendapatkan data pelanggan data! Data tidak ditemukan',
+                    'data' => $pelangganData
+                ], 404);
+            } else {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Berhasil mendapatkan data pelanggan data',
+                    'data' => $pelangganData
+                ], 200);
+            }
+        }
+        catch (\Exception)
+        {
+            return response()->json([
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
+        }
+    }
     public function store(Request $request)
     {
-        try {
-            //throw new \Exception('error 500');
-
+        try
+        {
             $validator = Validator::make($request->all(), [
-                'pelanggan_data_pelanggan_id' => 'required|exists:pelanggan,pelanggan_id',
+                'pelanggan_data_pelanggan_id' => 'required|numeric',
                 'pelanggan_data_jenis' => 'required|in:KTP,SIM',
-                'pelanggan_data_file' => 'required|image|mimes:jpg,png,jpeg',
+                'pelanggan_data_file' => 'required|mimes:jpg,jpeg,png|max:255',
             ], [
-                'pelanggan_data_jenis.in' => 'Pelanggan Data Jenis harus diisi KTP atau SIM',
-                'pelanggan_data_file.required' => 'File harus diunggah',
-                'pelanggan_data_file.image' => 'File harus berupa gambar',
-                'pelanggan_data_file.mimes' => 'File harus memiliki format .jpg, .png, atau .jpeg',
+                'in' => 'Data harus berisi nilai KTP atau SIM!',
+                'mimes' => 'File harus memiliki format .jpg, .png, atau .jepg',
+                'numeric' => 'Data harus berupa angka!',
+                'required' => 'Kolom tidak boleh kosong!',
+                'max' => 'Panjang data tidak boleh lebih dari :max karakter!',
             ]);
 
-            if ($validator->fails()) {
+            if ($validator->fails())
+            {
                 return response()->json([
-                    'message' => 'Validasi gagal',
+                    'status' => 422,
+                    'msg' => 'Gagal menambahkan data pelanggan data!',
                     'errors' => $validator->errors()
                 ], 422);
             }
+            else
+            {
+                $pelangganData = $this->pelangganDataModel->create_pelangganData($validator->validated());
 
-
-            $file = $request->file('pelanggan_data_file');
-            $filename = $file->getClientOriginalName();
-            $filepath = $file->storeAs('pelanggan_data_file', $filename);
-
-            $pelanggan_data = $this->pelanggan_dataModel->create([
-                'pelanggan_data_pelanggan_id' => $request->pelanggan_data_pelanggan_id,
-                'pelanggan_data_jenis' => $request->pelanggan_data_jenis,
-                'pelanggan_data_file' => $filepath,
-            ]);
-
+                return response()->json([
+                    'status' => 201,
+                    'msg' => 'Data pelangan data berhasil dibuat',
+                    'data' => $pelangganData
+                ], 201);
+            }
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data Pelanggan Data berhasil dibuat',
-                'data' => $pelanggan_data
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Terjadi kesalahan pada server!'
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
             ], 500);
         }
     }
 
-    public function update(Request $request, string $id)
+    public function update (Request $request, $id)
     {
-        try {
+        try
+        {
             $validator = Validator::make($request->all(), [
-                'pelanggan_data_pelanggan_id' => 'exists:pelanggan,pelanggan_id',
-                'pelanggan_data_jenis' => 'in:KTP,SIM',
-                'pelanggan_data_file' => 'image|mimes:jpg,png,jpeg',
+                'pelanggan_data_pelanggan_id' => 'required|numeric',
+                'pelanggan_data_jenis' => 'required|in:KTP,SIM',
+                'pelanggan_data_file' => 'required|mimes:jpg,jpeg,png|max:255',
+            ], [
+                'in' => 'Data harus berisi nilai KTP atau SIM!',
+                'mimes' => 'File harus memiliki format .jpg, .png, atau .jepg',
+                'numeric' => 'Data harus berupa angka!',
+                'required' => 'Kolom tidak boleh kosong!',
+                'max' => 'Panjang data tidak boleh lebih dari :max karakter!',
             ]);
 
-            if ($validator->fails()) {
+            if ($validator->fails())
+            {
                 return response()->json([
-                    'message' => 'Validasi Gagal',
-                    'errors' => $validator->errors(),
+                    'status' => 422,
+                    'msg' => 'Gagal update data pelanggan data!',
+                    'errors' => $validator->errors()
                 ], 422);
             }
+            else
+            {
+                $pelangganData = $this->pelangganDataModel->update_pelangganData($validator->validated(), $id);
 
-            $pelanggan_data = $this->pelanggan_dataModel->find($id);
-
-            if (!$pelanggan_data) {
                 return response()->json([
-                    'message' => 'Data Pelanggan Data tidak ditemukan'
-                ], 404);
+                    'status' => 200,
+                    'msg' => 'Data pelanggan data berhasil diupdate',
+                    'data' => $pelangganData
+                ], 200);
             }
-
-            
-            if ($request->hasFile('pelanggan_data_file')) {
-                Storage::delete($pelanggan_data->pelanggan_data_file); 
-                $file = $request->file('pelanggan_data_file')->store('pelanggan_data'); 
-            } else {
-                $file = $pelanggan_data->pelanggan_data_file;
-            }
-
-            $pelanggan_data->update([
-                'pelanggan_data_pelanggan_id' => $request->pelanggan_data_pelanggan_id,
-                'pelanggan_data_jenis' => $request->pelanggan_data_jenis,
-                'pelanggan_data_file' => $file, 
-            ]);
-
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data Pelanggan Data berhasil diperbarui',
-                'data' => $pelanggan_data
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Terjadi kesalahan pada server!'
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
             ], 500);
         }
     }
 
-
-
-    public function destroy(string $id)
+    public function destroy ($id)
     {
-        $pelanggan_data = $this->pelanggan_dataModel->find($id);
+        try
+        {
+            $pelangganData = $this->pelangganDataModel->delete_pelangganData($id);
 
-        if (!$pelanggan_data) {
-            return response()->json([
-                'message' => 'Data Pelanggan Data tidak ditemukan'
-            ], 404);
+            if ($pelangganData == null) {
+                return response()->json([
+                    'status' => 404,
+                    'msg' => 'Gagal menghapus data pelanggan data! Data tidak ditemukan',
+                    'data' => $pelangganData
+                ], 404);
+            } else {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Berhasil menghapus data pelanggan data',
+                    'data' => $pelangganData
+                ], 200);
+            }
         }
-        $pelanggan_data->delete();
-        return response()->json([
-            'message' => 'Data Pelanggan Data berhasil dihapus'
-        ], 200);
-    }
-
-
-    public function show(string $id)
-    {
-        $pelanggan_data = $this->pelanggan_dataModel->find($id);
-
-        if (!$pelanggan_data) {
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data Pelanggan Data tidak ditemukan'
-            ], 404);
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
         }
-        return response()->json([
-            'message' => 'Data Pelanggan Data berhasil didapatkan',
-            'data' => $pelanggan_data
-        ], 200);
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
-
-
-    /**
-     * Remove the specified resource from storage.
-     */
 }

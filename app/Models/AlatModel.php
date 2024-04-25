@@ -4,12 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\KategoriModel;
 
 class AlatModel extends Model
 {
-    use HasFactory;
-
     protected $table = 'alat';
     protected $primaryKey = 'alat_id';
     protected $fillable = [
@@ -19,28 +16,27 @@ class AlatModel extends Model
         'alat_hargaperhari',
         'alat_stok',
     ];
-    public function get_alat()
+    public function get_alat ()
     {
         return self::all();
     }
-    public function kategori()
-    {
-        return $this->belongsTo(KategoriModel::class, 'alat_kategori_id', 'kategori_id');
-    }
-    public function create_alat($data)
+    public function create_alat ($data)
     {
         return self::create($data);
     }
+
     public function update_alat($data, $id)
     {
         $alat = self::find($id);
-        $alat->update($data);
+        $alat->fill($data);
+        $alat->update();
         return $alat;
     }
+
     public function delete_alat($id)
     {
         $alat = self::find($id);
-        $alat->delete();
+        self::destroy($id);
         return $alat;
     }
 }

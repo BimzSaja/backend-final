@@ -2,26 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Admin;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class RegisterController extends Controller
 {
-    public function register(Request $request)
+    public function __invoke(Request $request)
     {
-        $admin = Admin::create([
-            'admin_username' => $request->admin_username,
-            'admin_password' => Hash::make($request->admin_password),
-        ]);
+        $data = [
+            'name' => $request['name'],
+            'email' => $request['email'],
+            'password' => $request['password']
+        ];
 
-        $token = auth()->guard('admin-api')->user();
+        $user = User::create($data);
 
         return response()->json([
             'status' => 201,
-            'message' => 'Berhasil Menambahkan Admin!',
-            'data' => $admin,
+            'message' => 'Pendaftaran akun berhasil dilakukan!',
+            'data' => $user
         ], 201);
     }
 }
-

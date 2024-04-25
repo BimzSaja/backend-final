@@ -2,129 +2,186 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PenyewaanDetailModel;
 use Illuminate\Http\Request;
-use App\Models\Penyewaan_DetailModel;
 use Illuminate\Support\Facades\Validator;
 
-class Penyewaan_DetailController extends Controller
+class PenyewaanDetailController extends Controller
 {
     protected $penyewaanDetailModel;
-
-    public function __construct(Penyewaan_DetailModel $penyewaanDetailModel)
+    public function __construct()
     {
-        $this->penyewaanDetailModel = $penyewaanDetailModel;
+        $this->penyewaanDetailModel = new PenyewaanDetailModel();
     }
-
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        try {
-            $penyewaanDetails = $this->penyewaanDetailModel->all();
+        try
+        {
+            $penyewaanDetail = $this->penyewaanDetailModel->get_penyewaanDetail();
 
-            if ($penyewaanDetails->isEmpty()) { {
-                    return response()->json([
-                        'message' => 'Data Penyewaan Detail masih kosong',
-                        'data' => $penyewaanDetails
-                    ], 200);
-                }
+            if (count($penyewaanDetail) === 0)
+            {
+                return response()->json([
+                    'status' => 204,
+                    'msg' => 'Data penyewaan detail masih kosong',
+                    'data' => $penyewaanDetail
+                ], 204);
             }
+            else
+            {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Data penyewaan detail berhasil didapatkan',
+                    'data' => $penyewaanDetail,
+                ], 200);
+            }
+
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data Penyewaan Detail berhasil didapatkan',
-                'data' => $penyewaanDetails
-            ], 200);
-        } catch (\Exception $e) {
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
+        }
+    }
+    public function show ($id) {
+        try
+        {
+            $penyewaanDetail = PenyewaanDetailModel::find($id);
+
+            if ($penyewaanDetail == null) {
+                return response()->json([
+                    'status' => 404,
+                    'msg' => 'Gagal mendapatkan data penyewaan detail! Data tidak ditemukan',
+                    'data' => $penyewaanDetail
+                ], 404);
+            } else {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Berhasil mendapatkan data penyewaan detail',
+                    'data' => $penyewaanDetail
+                ], 200);
+            }
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Terjadi kesalahan pada server'
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
+        }
+    }
+    public function store(Request $request)
+    {
+        try
+        {
+            $validator = Validator::make($request->all(), [
+                'penyewaan_detail_penyewaan_id' => 'required|numeric',
+                'penyewaan_detail_alat_id' => 'required|numeric',
+                'penyewaan_detail_jumlah' => 'required|numeric',
+                'penyewaan_detail_subharga' => 'required|numeric',
+            ], [
+                'numeric' => 'Data harus berupa angka!',
+                'required' => 'Kolom tidak boleh kosong!',
+            ]);
+
+            if ($validator->fails())
+            {
+                return response()->json([
+                    'status' => 422,
+                    'msg' => 'Gagal menambahkan data penyewaan detail!',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            else
+            {
+                $penyewaanDetail = $this->penyewaanDetailModel->create_penyewaanDetail($validator->validated());
+
+                return response()->json([
+                    'status' => 201,
+                    'msg' => 'Data penyewaan detail berhasil dibuat',
+                    'data' => $penyewaanDetail
+                ], 201);
+            }
+        }
+        catch (\Exception)
+        {
+            return response()->json([
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
             ], 500);
         }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function update (Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'penyewaan_detail_penyewaan_id' => 'required|exists:penyewaan,penyewaan_id',
-            'penyewaan_detail_alat_id' => 'required|exists:alat,alat_id',
-            'penyewaan_detail_jumlah' => 'required|integer',
-            'penyewaan_detail_subharga' => 'required|integer',
-        ]);
+        try
+        {
+            $validator = Validator::make($request->all(), [
+                'penyewaan_detail_penyewaan_id' => 'required|numeric',
+                'penyewaan_detail_alat_id' => 'required|numeric',
+                'penyewaan_detail_jumlah' => 'required|numeric',
+                'penyewaan_detail_subharga' => 'required|numeric',
+            ], [
+                'numeric' => 'Data harus berupa angka!',
+                'required' => 'Kolom tidak boleh kosong!',
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json(['status' => 422, 'message' => 'Validasi pada data Penyewaan Detail gagal!', 'errors' => $validator->errors()], 422);
-        }
-
-        $penyewaanDetail = Penyewaan_DetailModel::create($validator->validated());
-        return response()->json(['status' => 201, 'message' => 'Data Penyewaan Detail berhasil di buat!', 'data' => $penyewaanDetail], 201);
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show($id)
-    {
-        try {
-            $penyewaanDetail = $this->penyewaanDetailModel->findOrFail($id);
-
-            if (!$penyewaanDetail) {
+            if ($validator->fails())
+            {
                 return response()->json([
-                    'message' => 'Data Penyewaan Detail tidak ada'
-                ], 404);
+                    'status' => 422,
+                    'msg' => 'Gagal update data penyewaan detail!',
+                    'errors' => $validator->errors()
+                ], 422);
             }
+            else
+            {
+                $penyewaanDetail = $this->penyewaanDetailModel->update_penyewaanDetail($validator->validated(), $id);
+
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Data penyewaan detail berhasil diupdate',
+                    'data' => $penyewaanDetail
+                ], 200);
+            }
+        }
+        catch (\Exception)
+        {
             return response()->json([
-                'message' => 'Data penyewaan_detail berhasil ditemukan',
-                'data' => $penyewaanDetail
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Data penyewaan_detail tidak ditemukan'
-            ], 404);
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
+    public function destroy ($id)
     {
-        $validator = Validator::make($request->all(), [
-            'penyewaan_detail_penyewaan_id' => 'requires|exists:penyewaan,penyewaan_id',
-            'penyewaan_detail_alat_id' => 'required|exists:alat,alat_id',
-            'penyewaan_detail_jumlah' => 'required|integer',
-            'penyewaan_detail_subharga' => 'required|integer',
-        ]);
+        try
+        {
+            $penyewaanDetail = $this->penyewaanDetailModel->delete_penyewaanDetail($id);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 422, 
-                'message' => 'Validasi pada Penyewaan Detail gagal!', 
-                'errors' => $validator->errors()
-            ], 422);
+            if ($penyewaanDetail == null) {
+                return response()->json([
+                    'status' => 404,
+                    'msg' => 'Gagal menghapus data penyewaan detail! Data tidak ditemukan',
+                    'data' => $penyewaanDetail
+                ], 404);
+            } else {
+                return response()->json([
+                    'status' => 200,
+                    'msg' => 'Berhasil menghapus data penyewaan detail',
+                    'data' => $penyewaanDetail
+                ], 200);
+            }
         }
-
-        $penyewaanDetail = $this->penyewaanDetailModel->updatePenyewaanDetail($validator->validated(), $id);
-
-        return response()->json([
-            'status' => 200, 
-            'message' => $penyewaanDetail
-        ], 200);
-    }
-
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
-        $penyewaanDetail = $this->penyewaanDetailModel->deletePenyewaanDetail($id);
-
-        return response()->json([
-            'status' => 200, 
-            'message' => 'Data Penyewaan Detail berhasil dihapus!', 
-            'data' => $penyewaanDetail
-        ], 200);
+        catch (\Exception)
+        {
+            return response()->json([
+                'status' => 500,
+                'msg' => 'Terjadi kesalahan pada server!'
+            ], 500);
+        }
     }
 }

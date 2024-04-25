@@ -5,16 +5,37 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PelangganModel extends Model
+class PenyewaanDetailModel extends Model
 {
-    use HasFactory;
-
-    protected $table = 'pelanggan';
-    protected $primaryKey = 'pelanggan_id';
+    protected $table = 'penyewaan_detail';
+    protected $primaryKey = 'penyewaan_detail_id';
     protected $fillable = [
-        'pelanggan_nama',
-        'pelanggan_alamat',
-        'pelanggan_notelp',
-        'pelanggan_email',
+        'penyewaan_detail_penyewaan_id',
+        'penyewaan_detail_alat_id',
+        'penyewaan_detail_jumlah',
+        'penyewaan_detail_subharga',
     ];
+    public function get_penyewaanDetail ()
+    {
+        return self::all();
+    }
+    public function create_penyewaanDetail ($data)
+    {
+        return self::create($data);
+    }
+
+    public function update_penyewaanDetail($data, $id)
+    {
+        $penyewaanDetail = self::find($id);
+        $penyewaanDetail->fill($data);
+        $penyewaanDetail->update();
+        return $penyewaanDetail;
+    }
+
+    public function delete_penyewaanDetail($id)
+    {
+        $penyewaanDetail = self::find($id);
+        self::destroy($id);
+        return $penyewaanDetail;
+    }
 }

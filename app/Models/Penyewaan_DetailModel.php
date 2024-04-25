@@ -4,13 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\PenyewaanModel;
-use App\Models\AlatModel;
 
-class Penyewaan_DetailModel extends Model
+class PenyewaanDetailModel extends Model
 {
-    use HasFactory;
-
     protected $table = 'penyewaan_detail';
     protected $primaryKey = 'penyewaan_detail_id';
     protected $fillable = [
@@ -19,16 +15,27 @@ class Penyewaan_DetailModel extends Model
         'penyewaan_detail_jumlah',
         'penyewaan_detail_subharga',
     ];
-
-    // Relasi ke model Penyewaan
-    public function penyewaan()
+    public function get_penyewaanDetail ()
     {
-        return $this->belongsTo(PenyewaanModel::class, 'penyewaan_detail_penyewaan_id', 'penyewaan_id');
+        return self::all();
+    }
+    public function create_penyewaanDetail ($data)
+    {
+        return self::create($data);
     }
 
-    // Relasi ke model Alat
-    public function alat()
+    public function update_penyewaanDetail($data, $id)
     {
-        return $this->belongsTo(AlatModel::class, 'penyewaan_detail_alat_id', 'alat_id');
+        $penyewaanDetail = self::find($id);
+        $penyewaanDetail->fill($data);
+        $penyewaanDetail->update();
+        return $penyewaanDetail;
+    }
+
+    public function delete_penyewaanDetail($id)
+    {
+        $penyewaanDetail = self::find($id);
+        self::destroy($id);
+        return $penyewaanDetail;
     }
 }
